@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { api } from "@/lib/api"
 
 export default function CheckInPage() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null)
@@ -102,8 +103,8 @@ export default function CheckInPage() {
     }
   }
 
-  const handleSubmit = (type: "checkin" | "checkout") => {
-    if (!selectedMood) {
+  const handleSubmit = async (type: "checkin" | "checkout") => {
+    if (type === "checkout" && !selectedMood) {
       toast({
         title: "Mood selection required",
         description: "Please select your current mood before submitting.",
@@ -122,9 +123,17 @@ export default function CheckInPage() {
     }
 
     setIsSubmitting(true)
-
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Optionally upload selfie to backend and get URL, or just send base64
+      // If backend expects URL, use: const selfieUrl = await api.uploadImage(selfiePreview)
+      const payload = {
+        type,
+        mood: type === "checkin" ? (faceResult?.expression || "unknown") : (selectedMood || "unknown"),
+        description,
+        selfieImage: selfiePreview, // base64 string
+        faceData: faceResult || undefined,
+      }
+      await api.checkins.create(payload)
       setIsSubmitting(false)
       toast({
         title: type === "checkin" ? "Check-in successful" : "Check-out successful",
@@ -133,12 +142,19 @@ export default function CheckInPage() {
             ? "Your morning check-in has been recorded."
             : "Your afternoon check-out has been recorded.",
       })
-
       // Reset form
       setSelectedMood(null)
       setDescription("")
       setSelfiePreview(null)
-    }, 1500)
+      setFaceResult(null)
+    } catch (error: any) {
+      setIsSubmitting(false)
+      toast({
+        title: "Submission failed",
+        description: error?.message || "Failed to submit check-in/out. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (

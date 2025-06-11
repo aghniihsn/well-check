@@ -12,10 +12,12 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
+  const { user } = useAuth();
 
   const handleSave = () => {
     setIsSaving(true)
@@ -54,46 +56,16 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="first-name">First Name</Label>
-                  <Input id="first-name" defaultValue="Admin" />
+                  <Label htmlFor="first-name">Name</Label>
+                  <Input id="first-name" value={user?.name ?? ""} readOnly />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last-name">Last Name</Label>
-                  <Input id="last-name" defaultValue="User" />
-                </div>
+                {/* Jika ingin split first/last name, perlu field di backend */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="admin@wellcheck.com" />
+                <Input id="email" type="email" value={user?.email ?? ""} readOnly />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="job-title">Job Title</Label>
-                <Input id="job-title" defaultValue="Team Administrator" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select defaultValue="management">
-                  <SelectTrigger id="department">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="management">Management</SelectItem>
-                    <SelectItem value="development">Development</SelectItem>
-                    <SelectItem value="design">Design</SelectItem>
-                    <SelectItem value="marketing">Marketing</SelectItem>
-                    <SelectItem value="hr">Human Resources</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  placeholder="Tell us about yourself"
-                  defaultValue="Team administrator responsible for managing team wellbeing and productivity."
-                  rows={4}
-                />
-              </div>
+              {/* Job title, department, bio: jika belum ada di database, bisa dikosongkan atau hidden */}
             </CardContent>
             <CardFooter>
               <Button onClick={handleSave} disabled={isSaving}>

@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   BarChart3,
   Bell,
@@ -20,6 +20,7 @@ import {
   Users,
   X,
 } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -82,6 +83,29 @@ const adminNavItems: NavItem[] = [
   },
 ]
 
+const memberNavItems: NavItem[] = [
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: Home,
+  },
+  {
+    title: "Check-in/out",
+    href: "/dashboard/checkin",
+    icon: CheckCircle,
+  },
+  {
+    title: "Comfort Tips",
+    href: "/dashboard/tips",
+    icon: MessageSquare,
+  },
+  {
+    title: "Settings",
+    href: "/dashboard/settings",
+    icon: Settings,
+  },
+]
+
 export default function DashboardLayout({
   children,
 }: {
@@ -90,6 +114,8 @@ export default function DashboardLayout({
   const [isMobile, setIsMobile] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const pathname = usePathname()
+  const { user, logout } = useAuth()
+  const router = useRouter()
 
   // Check if mobile on mount and on resize
   useEffect(() => {
@@ -107,6 +133,16 @@ export default function DashboardLayout({
       setIsSidebarOpen(true)
     }
   }, [isMobile])
+
+  useEffect(() => {
+    // Jika user belum login, redirect ke login
+    if (user === null) {
+      router.replace("/login")
+    }
+  }, [user, router])
+
+  // Pilih navItems sesuai role
+  const navItems = user?.role === "manager" ? adminNavItems : memberNavItems
 
   return (
     <div className="flex min-h-screen bg-muted/20">
@@ -127,7 +163,7 @@ export default function DashboardLayout({
         </div>
         <div className="flex-1 overflow-auto py-4">
           <nav className="grid gap-1 px-2">
-            {adminNavItems.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -144,14 +180,14 @@ export default function DashboardLayout({
           </nav>
         </div>
         <div className="border-t p-4">
-          <div className={cn("flex items-center gap-3", !isSidebarOpen && "md:justify-center")}>
+          <div className={cn("flex items-center gap-3", !isSidebarOpen && "md:justify-center")}> 
             <Avatar>
               <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-              <AvatarFallback>AD</AvatarFallback>
+              <AvatarFallback>{user?.name?.[0]?.toUpperCase() ?? "U"}</AvatarFallback>
             </Avatar>
-            <div className={cn("flex flex-col", !isSidebarOpen && "md:hidden")}>
-              <span className="text-sm font-medium">Admin User</span>
-              <span className="text-xs text-muted-foreground">admin@wellcheck.com</span>
+            <div className={cn("flex flex-col", !isSidebarOpen && "md:hidden")}> 
+              <span className="text-sm font-medium">{user?.name ?? "User"}</span>
+              <span className="text-xs text-muted-foreground">{user?.email ?? "-"}</span>
             </div>
           </div>
         </div>
@@ -209,7 +245,7 @@ export default function DashboardLayout({
                 <div className="flex items-center gap-2 md:hidden">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                    <AvatarFallback>AD</AvatarFallback>
+                    <AvatarFallback>{user?.name?.[0]?.toUpperCase() ?? "U"}</AvatarFallback>
                   </Avatar>
                 </div>
               </SheetTrigger>
@@ -218,11 +254,11 @@ export default function DashboardLayout({
                   <div className="flex items-center gap-4 px-2">
                     <Avatar>
                       <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-                      <AvatarFallback>AD</AvatarFallback>
+                      <AvatarFallback>{user?.name?.[0]?.toUpperCase() ?? "U"}</AvatarFallback>
                     </Avatar>
                     <div className="grid gap-0.5">
-                      <div className="font-medium">Admin User</div>
-                      <div className="text-sm text-muted-foreground">admin@wellcheck.com</div>
+                      <div className="font-medium">{user?.name ?? "User"}</div>
+                      <div className="text-sm text-muted-foreground">{user?.email ?? "-"}</div>
                     </div>
                   </div>
                   <div className="grid gap-2 px-2">
@@ -243,13 +279,13 @@ export default function DashboardLayout({
                       <Settings className="h-5 w-5" />
                       Settings
                     </Link>
-                    <Link
-                      href="/login"
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
+                    <button
+                      onClick={() => logout()}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted text-left"
                     >
                       <LogOut className="h-5 w-5" />
                       Logout
-                    </Link>
+                    </button>
                   </div>
                 </nav>
               </SheetContent>
@@ -259,9 +295,9 @@ export default function DashboardLayout({
                 <Button variant="ghost" size="sm" className="hidden gap-2 md:flex">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                    <AvatarFallback>AD</AvatarFallback>
+                    <AvatarFallback>{user?.name?.[0]?.toUpperCase() ?? "U"}</AvatarFallback>
                   </Avatar>
-                  <span>Admin User</span>
+                  <span>{user?.name ?? "User"}</span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
@@ -275,8 +311,8 @@ export default function DashboardLayout({
                   <Link href="/dashboard/settings">Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/login">Logout</Link>
+                <DropdownMenuItem onClick={() => logout()}>
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

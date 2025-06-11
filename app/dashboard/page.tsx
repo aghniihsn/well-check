@@ -6,13 +6,19 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function DashboardPage() {
+  const user = { name: "Admin" } // Mock user data, replace with actual user data
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">
-            Welcome back, Admin! Here&apos;s an overview of your team&apos;s wellbeing.
+            {user ? (
+              <>Welcome back, {user.name}! Here&apos;s an overview of your team&apos;s wellbeing.</>
+            ) : (
+              <>Welcome back! Here&apos;s an overview of your team&apos;s wellbeing.</>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">

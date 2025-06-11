@@ -10,27 +10,31 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const { login, isLoading } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-
-    // Simulate login - in a real app, this would call an API
-    setTimeout(() => {
-      setIsLoading(false)
+    
+    try {
+      await login(email, password)
       toast({
         title: "Login successful",
         description: "Welcome back to WellCheck!",
       })
-      router.push("/dashboard")
-    }, 1500)
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "Please check your credentials and try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
