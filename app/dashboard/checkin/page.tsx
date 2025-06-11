@@ -9,8 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function CheckInPage() {
+  const { user } = useAuth();
   const [selectedMood, setSelectedMood] = useState<string | null>(null)
   const [description, setDescription] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -22,6 +24,8 @@ export default function CheckInPage() {
     age?: number
     expression?: string
   } | null>(null)
+  const [todayCheckins, setTodayCheckins] = useState<any[]>([]);
+  const [loadingToday, setLoadingToday] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const { toast } = useToast()
@@ -47,6 +51,21 @@ export default function CheckInPage() {
     }, 1000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    const fetchToday = async () => {
+      setLoadingToday(true);
+      try {
+        const data = await api.checkins.getToday();
+        setTodayCheckins(data || []);
+      } catch (e) {
+        setTodayCheckins([]);
+      } finally {
+        setLoadingToday(false);
+      }
+    };
+    fetchToday();
+  }, []);
 
   const openCamera = async () => {
     setIsCameraOpen(true)
@@ -157,6 +176,9 @@ export default function CheckInPage() {
     }
   }
 
+  const hasCheckedIn = todayCheckins.some((c) => c.type === "checkin");
+  const hasCheckedOut = todayCheckins.some((c) => c.type === "checkout");
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
@@ -256,8 +278,11 @@ export default function CheckInPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" onClick={() => handleSubmit("checkin")} disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button className="w-full" onClick={() => handleSubmit("checkin")}
+                disabled={isSubmitting || hasCheckedIn}>
+                {hasCheckedIn ? (
+                  "Sudah check-in hari ini"
+                ) : isSubmitting ? (
                   "Submitting..."
                 ) : (
                   <>
@@ -376,8 +401,11 @@ export default function CheckInPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full" onClick={() => handleSubmit("checkout")} disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button className="w-full" onClick={() => handleSubmit("checkout")}
+                disabled={isSubmitting || !hasCheckedIn || hasCheckedOut}>
+                {hasCheckedOut ? (
+                  "Sudah check-out hari ini"
+                ) : isSubmitting ? (
                   "Submitting..."
                 ) : (
                   <>
