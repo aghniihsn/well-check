@@ -10,9 +10,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
 import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
 
 export default function CheckInPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
   const [selectedMood, setSelectedMood] = useState<string | null>(null)
   const [description, setDescription] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -29,6 +31,11 @@ export default function CheckInPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const { toast } = useToast()
+
+  // State untuk kontrol tab dan waktu disable
+  const [activeTab, setActiveTab] = useState<string>("checkin");
+  const [checkinDisabledUntil, setCheckinDisabledUntil] = useState<Date | null>(null);
+  const [checkoutEnabled, setCheckoutEnabled] = useState(false);
 
   useEffect(() => {
     // Load all required face-api models
@@ -53,19 +60,39 @@ export default function CheckInPage() {
   }, [])
 
   useEffect(() => {
-    const fetchToday = async () => {
-      setLoadingToday(true);
-      try {
-        const data = await api.checkins.getToday();
-        setTodayCheckins(data || []);
-      } catch (e) {
-        setTodayCheckins([]);
-      } finally {
-        setLoadingToday(false);
-      }
-    };
-    fetchToday();
-  }, []);
+    if (!isLoading && user) {
+      const fetchToday = async () => {
+        setLoadingToday(true);
+        try {
+          const data = await api.checkins.getToday();
+          setTodayCheckins(data || []);
+          // Cek apakah sudah checkin hari ini
+          const checkin = (data || []).find((c: any) => c.type === "checkin");
+          if (checkin) {
+            // Set waktu disable checkin selama 8 jam dari waktu checkin
+            const checkinTime = new Date(checkin.createdAt);
+            const disableUntil = new Date(checkinTime.getTime() + 8 * 60 * 60 * 1000);
+            setCheckinDisabledUntil(disableUntil);
+            // Jika sudah lewat 8 jam, enable checkout
+            setCheckoutEnabled(new Date() >= disableUntil);
+            // Jika sudah checkin, langsung pindah ke tab checkout
+            setActiveTab("checkout");
+          } else {
+            setCheckinDisabledUntil(null);
+            setCheckoutEnabled(false);
+            setActiveTab("checkin");
+          }
+        } catch (e) {
+          setTodayCheckins([]);
+          setCheckinDisabledUntil(null);
+          setCheckoutEnabled(false);
+        } finally {
+          setLoadingToday(false);
+        }
+      };
+      fetchToday();
+    }
+  }, [user, isLoading]);
 
   const openCamera = async () => {
     setIsCameraOpen(true)
@@ -166,6 +193,10 @@ export default function CheckInPage() {
       setDescription("")
       setSelfiePreview(null)
       setFaceResult(null)
+      if (type === "checkin") {
+        // Setelah checkin, redirect ke dashboard
+        router.push("/dashboard");
+      }
     } catch (error: any) {
       setIsSubmitting(false)
       toast({
@@ -178,6 +209,10 @@ export default function CheckInPage() {
 
   const hasCheckedIn = todayCheckins.some((c) => c.type === "checkin");
   const hasCheckedOut = todayCheckins.some((c) => c.type === "checkout");
+
+  const now = new Date();
+  const isCheckinDisabled = (checkinDisabledUntil && now < checkinDisabledUntil) || hasCheckedIn;
+  const isCheckoutTabEnabled = checkoutEnabled && hasCheckedIn && !hasCheckedOut;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -195,10 +230,10 @@ export default function CheckInPage() {
         </div>
       )}
 
-      <Tabs defaultValue="checkin" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="checkin">Morning Check-in</TabsTrigger>
-          <TabsTrigger value="checkout">Afternoon Check-out</TabsTrigger>
+          <TabsTrigger value="checkin" disabled={isCheckinDisabled}>Morning Check-in</TabsTrigger>
+          <TabsTrigger value="checkout" disabled={!isCheckoutTabEnabled}>Afternoon Check-out</TabsTrigger>
         </TabsList>
 
         <TabsContent value="checkin">
@@ -307,44 +342,6 @@ export default function CheckInPage() {
                 <div className="flex items-center gap-2 text-lg">
                   <Clock className="h-5 w-5 text-muted-foreground" />
                   {currentTime}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">How are you feeling after today?</h3>
-                <div className="flex flex-wrap gap-4">
-                  {[
-                    {
-                      value: "happy",
-                      icon: Smile,
-                      label: "Satisfied",
-                      color: "bg-green-100 border-green-200 text-green-700",
-                    },
-                    {
-                      value: "neutral",
-                      icon: Meh,
-                      label: "Neutral",
-                      color: "bg-yellow-100 border-yellow-200 text-yellow-700",
-                    },
-                    { value: "stressed", icon: Frown, label: "Tired", color: "bg-red-100 border-red-200 text-red-700" },
-                  ].map((mood) => {
-                    const Icon = mood.icon
-                    return (
-                      <button
-                        key={mood.value}
-                        type="button"
-                        className={`flex flex-1 flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
-                          selectedMood === mood.value
-                            ? `${mood.color} border-2`
-                            : "border border-muted bg-transparent hover:bg-muted/50"
-                        }`}
-                        onClick={() => setSelectedMood(mood.value)}
-                      >
-                        <Icon className={`h-8 w-8 ${selectedMood === mood.value ? "" : "text-muted-foreground"}`} />
-                        <span className="font-medium">{mood.label}</span>
-                      </button>
-                    )
-                  })}
                 </div>
               </div>
 

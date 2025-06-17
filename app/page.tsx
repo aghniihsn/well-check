@@ -14,9 +14,6 @@ export default function Home() {
             <Link href="/login">
               <Button variant="ghost">Login</Button>
             </Link>
-            <Link href="/register">
-              <Button>Get Started</Button>
-            </Link>
           </nav>
         </div>
       </header>
@@ -30,48 +27,11 @@ export default function Home() {
               Track team mood, manage projects, and improve workplace wellbeing with our comprehensive platform.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link href="/register">
-                <Button size="lg" className="gap-2">
-                  Get Started <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
               <Link href="/login">
                 <Button size="lg" variant="outline">
                   Login
                 </Button>
               </Link>
-            </div>
-          </div>
-        </section>
-        <section className="container py-12 md:py-24 lg:py-32">
-          <div className="mx-auto grid max-w-5xl items-center gap-12 px-4 md:px-8 lg:grid-cols-2">
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold md:text-4xl">Key Features</h2>
-              <p className="text-muted-foreground">
-                WellCheck provides everything you need to manage your team and monitor wellbeing.
-              </p>
-              <ul className="grid gap-4">
-                {[
-                  "Role-based access for admins and members",
-                  "Team and project management",
-                  "Daily check-ins with mood tracking",
-                  "Team mood visualization dashboard",
-                  "Automatic wellbeing recommendations",
-                  "Push notifications for important events",
-                  "Comprehensive absence reporting",
-                  "Weekly mood analysis with insights",
-                ].map((feature) => (
-                  <li key={feature} className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-lg border bg-card p-8 shadow-sm">
-              <div className="aspect-video w-full rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground">
-                Dashboard Preview
-              </div>
             </div>
           </div>
         </section>

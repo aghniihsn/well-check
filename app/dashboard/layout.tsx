@@ -114,7 +114,7 @@ export default function DashboardLayout({
   const [isMobile, setIsMobile] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user, isLoading, logout } = useAuth()
   const router = useRouter()
 
   // Check if mobile on mount and on resize
@@ -135,11 +135,11 @@ export default function DashboardLayout({
   }, [isMobile])
 
   useEffect(() => {
-    // Jika user belum login, redirect ke login
-    if (user === null) {
+    // Jika user belum login, redirect ke login setelah loading selesai
+    if (!isLoading && user === null) {
       router.replace("/login")
     }
-  }, [user, router])
+  }, [user, isLoading, router])
 
   // Pilih navItems sesuai role
   const navItems = user?.role === "manager" ? adminNavItems : memberNavItems

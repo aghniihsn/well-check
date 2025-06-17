@@ -13,6 +13,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('auth_token');
+    console.log('[API] Token yang dikirim:', token); // Log token sebelum request
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
