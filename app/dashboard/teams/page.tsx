@@ -98,12 +98,61 @@ export default function TeamsPage() {
     setLoading(true)
     try {
       await api.teams.delete(id)
-      setTeams((prev) => prev.filter((t) => t.id !== id))
+      setTeams((prev) => prev.filter((t) => (t.id || t._id) !== id))
       toast({ title: "Team deleted" })
     } catch {
       toast({ title: "Failed to delete team", variant: "destructive" })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editTeamId, setEditTeamId] = useState<string>("");
+  const [editTeamName, setEditTeamName] = useState("");
+  const [editTeamDescription, setEditTeamDescription] = useState("");
+  const [editTeamMembers, setEditTeamMembers] = useState<string[]>([]);
+  const [editTeamLead, setEditTeamLead] = useState<string>("");
+
+  const openEditDialog = (team: any) => {
+    setEditTeamId(team.id || team._id);
+    setEditTeamName(team.name || "");
+    setEditTeamDescription(team.description || "");
+    setEditTeamMembers(Array.isArray(team.members) ? team.members.map((m: any) => typeof m === 'object' && m !== null ? m._id || m.id : m) : []);
+    setEditTeamLead(typeof team.lead === 'object' && team.lead !== null ? team.lead._id || team.lead.id : team.lead || "");
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditTeam = async () => {
+    if (!editTeamName.trim()) {
+      toast({ title: "Team name required", variant: "destructive" });
+      return;
+    }
+    if (!editTeamLead) {
+      toast({ title: "Team lead required", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.teams.update(editTeamId, {
+        name: editTeamName,
+        description: editTeamDescription,
+        members: editTeamMembers,
+        lead: editTeamLead,
+      });
+      setTeams((prev) => prev.map((t) => (t.id === editTeamId || t._id === editTeamId ? {
+        ...t,
+        name: editTeamName,
+        description: editTeamDescription,
+        members: editTeamMembers,
+        lead: editTeamLead,
+      } : t)));
+      setIsEditDialogOpen(false);
+      toast({ title: "Team updated" });
+    } catch {
+      toast({ title: "Failed to update team", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -245,16 +294,15 @@ export default function TeamsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEditDialog(team)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Team
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Users className="mr-2 h-4 w-4" />
-                        Manage Members
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => handleDeleteTeam(team.id || team._id)}
+                      >
                         <Trash className="mr-2 h-4 w-4" />
                         Delete Team
                       </DropdownMenuItem>
@@ -317,6 +365,79 @@ export default function TeamsPage() {
           </Button>
         </div>
       )}
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Team</DialogTitle>
+            <DialogDescription>Update team details and members</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-team-name">Team Name</Label>
+              <Input
+                id="edit-team-name"
+                value={editTeamName}
+                onChange={e => setEditTeamName(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-team-description">Team Description</Label>
+              <textarea
+                id="edit-team-description"
+                className="border rounded px-3 py-2 min-h-[60px]"
+                value={editTeamDescription}
+                onChange={e => setEditTeamDescription(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-team-members">Select Team Members</Label>
+              <div id="edit-team-members" className="flex flex-col gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                {users.filter((user: any) => user.role === 'member').map((user: any) => (
+                  <label key={user.id || user._id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={user.id || user._id}
+                      checked={editTeamMembers.includes(user.id || user._id)}
+                      onChange={e => {
+                        const value = user.id || user._id;
+                        setEditTeamMembers(prev =>
+                          e.target.checked
+                            ? [...prev, value]
+                            : prev.filter(id => id !== value)
+                        );
+                      }}
+                    />
+                    <span>{user.name} ({user.email})</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-team-lead">Team Lead</Label>
+              <select
+                id="edit-team-lead"
+                className="border rounded px-3 py-2"
+                value={editTeamLead}
+                onChange={e => setEditTeamLead(e.target.value)}
+              >
+                <option value="">Select team lead</option>
+                {users.filter((user: any) => user.role === 'member').map((user: any) => (
+                  <option key={user.id || user._id} value={user.id || user._id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditTeam}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

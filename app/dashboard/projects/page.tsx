@@ -119,6 +119,69 @@ export default function ProjectsPage() {
     }
   }
 
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editProjectId, setEditProjectId] = useState<string>("");
+  const [editProjectName, setEditProjectName] = useState("");
+  const [editProjectDescription, setEditProjectDescription] = useState("");
+  const [editProjectStartDate, setEditProjectStartDate] = useState("");
+  const [editProjectEndDate, setEditProjectEndDate] = useState("");
+  const [editProjectTeams, setEditProjectTeams] = useState<string[]>([]);
+
+  const openEditDialog = (project: any) => {
+    setEditProjectId(project.id || project._id);
+    setEditProjectName(project.name || "");
+    setEditProjectDescription(project.description || "");
+    setEditProjectStartDate(project.startDate ? new Date(project.startDate).toISOString().slice(0, 10) : "");
+    setEditProjectEndDate(project.endDate ? new Date(project.endDate).toISOString().slice(0, 10) : "");
+    setEditProjectTeams(Array.isArray(project.teams) ? project.teams.map((t: any) => typeof t === 'object' && t !== null ? t._id || t.id : t) : []);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditProject = async () => {
+    if (!editProjectName.trim()) {
+      toast({ title: "Project name required", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.projects.update(editProjectId, {
+        name: editProjectName,
+        description: editProjectDescription,
+        startDate: editProjectStartDate,
+        endDate: editProjectEndDate,
+        teams: editProjectTeams,
+      });
+      setProjects((prev) => prev.map((p) => (p.id === editProjectId || p._id === editProjectId ? {
+        ...p,
+        name: editProjectName,
+        description: editProjectDescription,
+        startDate: editProjectStartDate,
+        endDate: editProjectEndDate,
+        teams: editProjectTeams,
+      } : p)));
+      setIsEditDialogOpen(false);
+      toast({ title: "Project updated" });
+    } catch {
+      toast({ title: "Failed to update project", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    if (!confirm("Delete this project?")) return;
+    setLoading(true);
+    try {
+      await api.projects.delete(id);
+      setProjects((prev) => prev.filter((p) => (p.id || p._id) !== id));
+      toast({ title: "Project deleted" });
+    } catch {
+      toast({ title: "Failed to delete project", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -284,6 +347,25 @@ export default function ProjectsPage() {
                     <Button variant="outline" className="w-full" asChild>
                       <Link href={`/dashboard/projects/${project.id}`}>View Project</Link>
                     </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEditDialog(project)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Project
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteProject(project.id || project._id)}>
+                          <Trash className="mr-2 h-4 w-4" />
+                          Delete Project
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </CardFooter>
                 </Card>
               );
@@ -370,6 +452,71 @@ export default function ProjectsPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>Update project details and assigned teams</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-project-name">Project Name</Label>
+              <Input
+                id="edit-project-name"
+                value={editProjectName}
+                onChange={e => setEditProjectName(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-project-description">Description</Label>
+              <textarea
+                id="edit-project-description"
+                className="border rounded px-3 py-2 min-h-[60px]"
+                value={editProjectDescription}
+                onChange={e => setEditProjectDescription(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-project-start-date">Start Date</Label>
+              <Input id="edit-project-start-date" type="date" value={editProjectStartDate} onChange={e => setEditProjectStartDate(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-project-end-date">End Date</Label>
+              <Input id="edit-project-end-date" type="date" value={editProjectEndDate} onChange={e => setEditProjectEndDate(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-project-teams">Assign Teams</Label>
+              <div id="edit-project-teams" className="flex flex-col gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                {teams.map((team: any) => (
+                  <label key={team.id || team._id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={team.id || team._id}
+                      checked={editProjectTeams.includes(team.id || team._id)}
+                      onChange={e => {
+                        const value = team.id || team._id;
+                        setEditProjectTeams(prev =>
+                          e.target.checked
+                            ? [...prev, value]
+                            : prev.filter(id => id !== value)
+                        );
+                      }}
+                    />
+                    <span>{team.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditProject}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
