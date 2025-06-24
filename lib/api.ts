@@ -74,6 +74,25 @@ export const api = {
       method: 'PUT',
       data,
     }),
+    getAll: () => fetcher<any[]>('/users'), // Added for fetching all users
+  },
+
+  // Project endpoints
+  projects: {
+    getAll: () => fetcher<any[]>('/projects'),
+    getById: (id: string) => fetcher<any>(`/projects/${id}`),
+    create: (data: any) => fetcher<any>('/projects', { method: 'POST', data }),
+    update: (id: string, data: any) => fetcher<any>(`/projects/${id}`, { method: 'PUT', data }),
+    delete: (id: string) => fetcher<any>(`/projects/${id}`, { method: 'DELETE' }),
+  },
+
+  // Team endpoints
+  teams: {
+    getAll: () => fetcher<any[]>('/teams'),
+    getById: (id: string) => fetcher<any>(`/teams/${id}`),
+    create: (data: any) => fetcher<any>('/teams', { method: 'POST', data }),
+    update: (id: string, data: any) => fetcher<any>(`/teams/${id}`, { method: 'PUT', data }),
+    delete: (id: string) => fetcher<any>(`/teams/${id}`, { method: 'DELETE' }),
   }
 };
 

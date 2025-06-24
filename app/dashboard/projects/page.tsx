@@ -1,22 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
-  Calendar,
-  Check,
-  CheckCircle,
   ChevronDown,
-  Clock,
   Edit,
   MoreHorizontal,
   Plus,
   Search,
   Trash,
   Users,
+  Calendar,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -37,74 +33,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-
-// Sample project data
-const projects = [
-  {
-    id: 1,
-    name: "Website Redesign",
-    description: "Redesign the company website with new branding",
-    team: "Design Team",
-    members: 5,
-    progress: 75,
-    status: "in-progress",
-    dueDate: "2023-06-30",
-  },
-  {
-    id: 2,
-    name: "Mobile App Development",
-    description: "Develop a new mobile app for customers",
-    team: "Development Team",
-    members: 8,
-    progress: 45,
-    status: "in-progress",
-    dueDate: "2023-08-15",
-  },
-  {
-    id: 3,
-    name: "Q2 Marketing Campaign",
-    description: "Plan and execute Q2 marketing campaign",
-    team: "Marketing Team",
-    members: 6,
-    progress: 90,
-    status: "in-progress",
-    dueDate: "2023-06-15",
-  },
-  {
-    id: 4,
-    name: "Product Launch",
-    description: "Prepare for the new product launch",
-    team: "Product Team",
-    members: 10,
-    progress: 30,
-    status: "in-progress",
-    dueDate: "2023-09-01",
-  },
-  {
-    id: 5,
-    name: "Customer Survey",
-    description: "Conduct annual customer satisfaction survey",
-    team: "Marketing Team",
-    members: 3,
-    progress: 100,
-    status: "completed",
-    dueDate: "2023-05-30",
-  },
-  {
-    id: 6,
-    name: "Internal Tools Update",
-    description: "Update internal tools and systems",
-    team: "Development Team",
-    members: 4,
-    progress: 60,
-    status: "in-progress",
-    dueDate: "2023-07-15",
-  },
-]
+import { api } from "@/lib/api"
 
 export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -112,14 +44,37 @@ export default function ProjectsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [newProjectName, setNewProjectName] = useState("")
   const [newProjectDescription, setNewProjectDescription] = useState("")
-  const [newProjectTeam, setNewProjectTeam] = useState("")
+  const [newProjectStartDate, setNewProjectStartDate] = useState("")
+  const [newProjectEndDate, setNewProjectEndDate] = useState("")
+  const [newProjectTeams, setNewProjectTeams] = useState<string[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [teams, setTeams] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const filteredProjects = projects.filter((project) => {
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      api.projects.getAll(),
+      api.teams.getAll()
+    ])
+      .then(([projectData, teamData]) => {
+        setProjects(Array.isArray(projectData) ? projectData : [])
+        setTeams(Array.isArray(teamData) ? teamData : [])
+      })
+      .catch(() => {
+        setProjects([])
+        setTeams([])
+        toast({ title: "Failed to load projects or teams", variant: "destructive" })
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filteredProjects = (projects || []).filter((project) => {
     const matchesSearch =
       project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.team.toLowerCase().includes(searchQuery.toLowerCase())
+      (project.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (project.teamName || project.team || "").toLowerCase().includes(searchQuery.toLowerCase())
 
     if (activeTab === "all") return matchesSearch
     if (activeTab === "active") return matchesSearch && project.status === "in-progress"
@@ -128,7 +83,7 @@ export default function ProjectsPage() {
     return matchesSearch
   })
 
-  const handleCreateProject = () => {
+  const handleCreateProject = async () => {
     if (!newProjectName.trim()) {
       toast({
         title: "Project name required",
@@ -137,26 +92,31 @@ export default function ProjectsPage() {
       })
       return
     }
-
-    if (!newProjectTeam) {
-      toast({
-        title: "Team selection required",
-        description: "Please select a team for the project.",
-        variant: "destructive",
+    setLoading(true)
+    try {
+      const newProject = await api.projects.create({
+        name: newProjectName,
+        description: newProjectDescription,
+        startDate: newProjectStartDate,
+        endDate: newProjectEndDate,
+        teams: newProjectTeams,
       })
-      return
+      setProjects((prev) => [...prev, newProject])
+      toast({
+        title: "Project created",
+        description: `${newProjectName} has been created successfully.`,
+      })
+      setNewProjectName("")
+      setNewProjectDescription("")
+      setNewProjectStartDate("")
+      setNewProjectEndDate("")
+      setNewProjectTeams([])
+      setIsCreateDialogOpen(false)
+    } catch (e) {
+      toast({ title: "Failed to create project", variant: "destructive" })
+    } finally {
+      setLoading(false)
     }
-
-    // In a real app, this would call an API to create the project
-    toast({
-      title: "Project created",
-      description: `${newProjectName} has been created successfully.`,
-    })
-
-    setNewProjectName("")
-    setNewProjectDescription("")
-    setNewProjectTeam("")
-    setIsCreateDialogOpen(false)
   }
 
   return (
@@ -190,30 +150,44 @@ export default function ProjectsPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="project-description">Description</Label>
-                <Input
+                <textarea
                   id="project-description"
                   placeholder="Brief description of the project"
+                  className="border rounded px-3 py-2 min-h-[60px]"
                   value={newProjectDescription}
                   onChange={(e) => setNewProjectDescription(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="project-team">Assign Team</Label>
-                <Select value={newProjectTeam} onValueChange={setNewProjectTeam}>
-                  <SelectTrigger id="project-team">
-                    <SelectValue placeholder="Select team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="development">Development Team</SelectItem>
-                    <SelectItem value="design">Design Team</SelectItem>
-                    <SelectItem value="marketing">Marketing Team</SelectItem>
-                    <SelectItem value="product">Product Team</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="project-start-date">Start Date</Label>
+                <Input id="project-start-date" type="date" value={newProjectStartDate} onChange={e => setNewProjectStartDate(e.target.value)} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="project-due-date">Due Date</Label>
-                <Input id="project-due-date" type="date" />
+                <Label htmlFor="project-end-date">End Date</Label>
+                <Input id="project-end-date" type="date" value={newProjectEndDate} onChange={e => setNewProjectEndDate(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="project-teams">Assign Teams</Label>
+                <div id="project-teams" className="flex flex-col gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                  {teams.map((team: any) => (
+                    <label key={team.id || team._id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={team.id || team._id}
+                        checked={newProjectTeams.includes(team.id || team._id)}
+                        onChange={e => {
+                          const value = team.id || team._id;
+                          setNewProjectTeams(prev =>
+                            e.target.checked
+                              ? [...prev, value]
+                              : prev.filter(id => id !== value)
+                          );
+                        }}
+                      />
+                      <span>{team.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
             <DialogFooter>
@@ -265,91 +239,55 @@ export default function ProjectsPage() {
 
         <TabsContent value="all" className="space-y-4">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredProjects.map((project) => (
-              <Card key={project.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
+            {filteredProjects.map((project) => {
+              const assignedTeams = Array.isArray(project.teams) ? project.teams : [];
+              return (
+                <Card key={project.id}>
+                  <CardHeader className="pb-3">
                     <div className="space-y-1">
-                      <CardTitle className="flex items-center gap-2">
-                        {project.name}
-                        {project.status === "completed" && <CheckCircle className="h-4 w-4 text-green-500" />}
-                      </CardTitle>
+                      <CardTitle>{project.name}</CardTitle>
                       <CardDescription>{project.description}</CardDescription>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Project
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Users className="mr-2 h-4 w-4" />
-                          Manage Team
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash className="mr-2 h-4 w-4" />
-                          Delete Project
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-3">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={project.status === "completed" ? "outline" : "default"}>
-                          {project.status === "in-progress" ? "In Progress" : "Completed"}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground">{project.progress}% complete</div>
-                    </div>
-                    <Progress value={project.progress} className="h-2" />
+                  </CardHeader>
+                  <CardContent className="pb-3">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div className="flex flex-col">
-                        <span className="text-muted-foreground">Team</span>
-                        <span className="font-medium">{project.team}</span>
+                        <span className="text-muted-foreground">Start Date</span>
+                        <span className="font-medium">{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-muted-foreground">Due Date</span>
-                        <span className="font-medium">{new Date(project.dueDate).toLocaleDateString()}</span>
+                        <span className="text-muted-foreground">End Date</span>
+                        <span className="font-medium">{project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}</span>
+                      </div>
+                      <div className="flex flex-col col-span-2">
+                        <span className="text-muted-foreground">Assigned Teams</span>
+                        <span className="font-medium">
+                          {assignedTeams.length === 0 ? '-' : assignedTeams.map((teamId: any, idx: number) => {
+                            let teamKey: string = "";
+                            if (typeof teamId === 'object' && teamId !== null) {
+                              teamKey = (teamId as any)._id || (teamId as any).id || "";
+                            } else if (typeof teamId === 'string') {
+                              teamKey = teamId;
+                            }
+                            const team = teams.find((t: any) => (t.id || t._id) === teamKey);
+                            return team ? (
+                              <span key={teamKey}>
+                                {team.name}{idx < assignedTeams.length - 1 ? ', ' : ''}
+                              </span>
+                            ) : null;
+                          })}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex -space-x-2">
-                        {Array.from({ length: Math.min(4, project.members) }).map((_, i) => (
-                          <Avatar key={i} className="border-2 border-background">
-                            <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={`Team member ${i + 1}`} />
-                            <AvatarFallback>TM</AvatarFallback>
-                          </Avatar>
-                        ))}
-                        {project.members > 4 && (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium">
-                            +{project.members - 4}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{Math.floor(Math.random() * 10) + 1}d left</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/dashboard/projects/${project.id}`}>View Project</Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link href={`/dashboard/projects/${project.id}`}>View Project</Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
 
           {filteredProjects.length === 0 && (
@@ -373,52 +311,20 @@ export default function ProjectsPage() {
             {filteredProjects.map((project) => (
               <Card key={project.id}>
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle>{project.name}</CardTitle>
-                      <CardDescription>{project.description}</CardDescription>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Project
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Check className="mr-2 h-4 w-4" />
-                          Mark as Completed
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash className="mr-2 h-4 w-4" />
-                          Delete Project
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="space-y-1">
+                    <CardTitle>{project.name}</CardTitle>
+                    <CardDescription>{project.description}</CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent className="pb-3">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Badge>In Progress</Badge>
-                      <div className="text-sm text-muted-foreground">{project.progress}% complete</div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground">Start Date</span>
+                      <span className="font-medium">{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</span>
                     </div>
-                    <Progress value={project.progress} className="h-2" />
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground">Team</span>
-                        <span className="font-medium">{project.team}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground">Due Date</span>
-                        <span className="font-medium">{new Date(project.dueDate).toLocaleDateString()}</span>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground">End Date</span>
+                      <span className="font-medium">{project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -437,55 +343,20 @@ export default function ProjectsPage() {
             {filteredProjects.map((project) => (
               <Card key={project.id}>
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="flex items-center gap-2">
-                        {project.name}
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      </CardTitle>
-                      <CardDescription>{project.description}</CardDescription>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit Project
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Users className="mr-2 h-4 w-4" />
-                          View Team
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash className="mr-2 h-4 w-4" />
-                          Delete Project
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="space-y-1">
+                    <CardTitle>{project.name}</CardTitle>
+                    <CardDescription>{project.description}</CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent className="pb-3">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline">Completed</Badge>
-                      <div className="text-sm text-muted-foreground">100% complete</div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground">Start Date</span>
+                      <span className="font-medium">{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</span>
                     </div>
-                    <Progress value={100} className="h-2" />
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground">Team</span>
-                        <span className="font-medium">{project.team}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-muted-foreground">Completed On</span>
-                        <span className="font-medium">{new Date(project.dueDate).toLocaleDateString()}</span>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground">End Date</span>
+                      <span className="font-medium">{project.endDate ? new Date(project.endDate).toLocaleDateString() : '-'}</span>
                     </div>
                   </div>
                 </CardContent>

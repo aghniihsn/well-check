@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ChevronDown, Edit, MoreHorizontal, Plus, Search, Trash, Users } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -26,49 +26,36 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { api } from "@/lib/api"
 
-// Sample team data
-const teams = [
-  {
-    id: 1,
-    name: "Development Team",
-    description: "Frontend and backend developers",
-    members: 8,
-    projects: 3,
-    lead: "Alex Johnson",
-  },
-  {
-    id: 2,
-    name: "Design Team",
-    description: "UI/UX and graphic designers",
-    members: 5,
-    projects: 2,
-    lead: "Sarah Williams",
-  },
-  {
-    id: 3,
-    name: "Marketing Team",
-    description: "Marketing and content specialists",
-    members: 6,
-    projects: 4,
-    lead: "Michael Brown",
-  },
-  {
-    id: 4,
-    name: "Product Team",
-    description: "Product managers and analysts",
-    members: 4,
-    projects: 2,
-    lead: "Emily Davis",
-  },
-]
+// Hapus data dummy teams
 
 export default function TeamsPage() {
+  const [teams, setTeams] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [newTeamName, setNewTeamName] = useState("")
   const [newTeamDescription, setNewTeamDescription] = useState("")
+  const [newTeamMembers, setNewTeamMembers] = useState<string[]>([])
+  const [newTeamLead, setNewTeamLead] = useState<string>("");
+  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      api.teams.getAll(),
+      api.user.getAll ? api.user.getAll() : Promise.resolve([])
+    ])
+      .then(([teamData, userData]) => {
+        setTeams(Array.isArray(teamData) ? teamData : [])
+        setUsers(Array.isArray(userData) ? userData : [])
+      })
+      .catch(() => toast({ title: "Failed to load data", variant: "destructive" }))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filteredTeams = teams.filter(
     (team) =>
@@ -76,25 +63,48 @@ export default function TeamsPage() {
       team.description.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  const handleCreateTeam = () => {
+  const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
-      toast({
-        title: "Team name required",
-        description: "Please enter a name for the team.",
-        variant: "destructive",
-      })
+      toast({ title: "Team name required", variant: "destructive" })
       return
     }
+    if (!newTeamLead) {
+      toast({ title: "Team lead required", variant: "destructive" })
+      return
+    }
+    setLoading(true)
+    try {
+      const newTeam = await api.teams.create({
+        name: newTeamName,
+        description: newTeamDescription,
+        members: newTeamMembers,
+        lead: newTeamLead,
+      })
+      setTeams((prev) => [...prev, newTeam])
+      setNewTeamName("")
+      setNewTeamDescription("")
+      setNewTeamMembers([])
+      setNewTeamLead("")
+      toast({ title: "Team created" })
+    } catch {
+      toast({ title: "Failed to create team", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }
 
-    // In a real app, this would call an API to create the team
-    toast({
-      title: "Team created",
-      description: `${newTeamName} has been created successfully.`,
-    })
-
-    setNewTeamName("")
-    setNewTeamDescription("")
-    setIsCreateDialogOpen(false)
+  const handleDeleteTeam = async (id: string) => {
+    if (!confirm("Delete this team?")) return
+    setLoading(true)
+    try {
+      await api.teams.delete(id)
+      setTeams((prev) => prev.filter((t) => t.id !== id))
+      toast({ title: "Team deleted" })
+    } catch {
+      toast({ title: "Failed to delete team", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -114,39 +124,66 @@ export default function TeamsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Team</DialogTitle>
-              <DialogDescription>Add a new team to your organization</DialogDescription>
+              <DialogDescription>Assign this team to a project and add members</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="team-name">Team Name</Label>
                 <Input
                   id="team-name"
-                  placeholder="e.g. Marketing Team"
+                  placeholder="e.g. UI/UX Team"
                   value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
+                  onChange={e => setNewTeamName(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="team-description">Description</Label>
-                <Input
+                <Label htmlFor="team-description">Team Description</Label>
+                <textarea
                   id="team-description"
-                  placeholder="Brief description of the team"
+                  placeholder="Brief explanation about the team's focus or role (optional)"
+                  className="border rounded px-3 py-2 min-h-[60px]"
                   value={newTeamDescription}
-                  onChange={(e) => setNewTeamDescription(e.target.value)}
+                  onChange={e => setNewTeamDescription(e.target.value)}
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="team-members">Select Team Members</Label>
+                <div id="team-members" className="flex flex-col gap-2 max-h-40 overflow-y-auto border rounded p-2">
+                  {users.filter((user: any) => user.role === 'member').map((user: any) => (
+                    <label key={user.id || user._id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={user.id || user._id}
+                        checked={newTeamMembers.includes(user.id || user._id)}
+                        onChange={e => {
+                          const value = user.id || user._id;
+                          setNewTeamMembers(prev =>
+                            e.target.checked
+                              ? [...prev, value]
+                              : prev.filter(id => id !== value)
+                          );
+                        }}
+                      />
+                      <span>{user.name} ({user.email})</span>
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="team-lead">Team Lead</Label>
-                <Select>
-                  <SelectTrigger id="team-lead">
-                    <SelectValue placeholder="Select team lead" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user1">John Doe</SelectItem>
-                    <SelectItem value="user2">Jane Smith</SelectItem>
-                    <SelectItem value="user3">Robert Johnson</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  id="team-lead"
+                  className="border rounded px-3 py-2"
+                  value={newTeamLead}
+                  onChange={e => setNewTeamLead(e.target.value)}
+                >
+                  <option value="">Select team lead</option>
+                  {users.filter((user: any) => user.role === 'member').map((user: any) => (
+                    <option key={user.id || user._id} value={user.id || user._id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <DialogFooter>
@@ -189,74 +226,83 @@ export default function TeamsPage() {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredTeams.map((team) => (
-          <Card key={team.id}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle>{team.name}</CardTitle>
-                  <CardDescription>{team.description}</CardDescription>
+        {filteredTeams.map((team) => {
+          const leadId = typeof team.lead === 'object' && team.lead !== null ? team.lead._id || team.lead.id : team.lead;
+          const leadUser = users.find((u: any) => (u.id || u._id) === leadId);
+          return (
+            <Card key={team.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle>{team.name}</CardTitle>
+                    <CardDescription>{team.description}</CardDescription>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Team
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Users className="mr-2 h-4 w-4" />
+                        Manage Members
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-red-600">
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete Team
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Team
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Users className="mr-2 h-4 w-4" />
-                      Manage Members
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-red-600">
-                      <Trash className="mr-2 h-4 w-4" />
-                      Delete Team
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent className="pb-3">
-              <div className="flex items-center gap-4">
-                <div className="flex -space-x-2">
-                  {Array.from({ length: Math.min(4, team.members) }).map((_, i) => (
-                    <Avatar key={i} className="border-2 border-background">
-                      <AvatarImage src={`/placeholder.svg?height=32&width=32`} alt={`Team member ${i + 1}`} />
-                      <AvatarFallback>TM</AvatarFallback>
-                    </Avatar>
-                  ))}
-                  {team.members > 4 && (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium">
-                      +{team.members - 4}
-                    </div>
-                  )}
+              </CardHeader>
+              <CardContent className="pb-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex -space-x-2">
+                    {Array.isArray(team.members) && team.members.length > 0 && team.members.slice(0, 4).map((memberId: any, i: number) => {
+                      let memberKey: string = "";
+                      if (typeof memberId === 'object' && memberId !== null) {
+                        memberKey = (memberId as any)._id || (memberId as any).id || "";
+                      } else if (typeof memberId === 'string') {
+                        memberKey = memberId;
+                      }
+                      const member = users.find((u: any) => (u.id || u._id) === memberKey);
+                      return (
+                        <Avatar key={i} className="border-2 border-background">
+                          <AvatarImage src={member?.avatar || "/placeholder.svg?height=32&width=32"} alt={member?.name || `Team member ${i + 1}`} />
+                          <AvatarFallback>{member?.name?.[0] || 'TM'}</AvatarFallback>
+                        </Avatar>
+                      );
+                    })}
+                    {Array.isArray(team.members) && team.members.length > 4 && (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium">
+                        +{team.members.length - 4}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground">{Array.isArray(team.members) ? team.members.length : 0} members</div>
                 </div>
-                <div className="text-sm text-muted-foreground">{team.members} members</div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                <div className="flex flex-col">
-                  <span className="text-muted-foreground">Team Lead</span>
-                  <span className="font-medium">{team.lead}</span>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex flex-col">
+                    <span className="text-muted-foreground">Team Lead</span>
+                    <span className="font-medium">{leadUser ? `${leadUser.name} (${leadUser.email})` : '-'}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-muted-foreground">Projects</span>
-                  <span className="font-medium">{team.projects} active</span>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" className="w-full" asChild>
-                <Link href={`/dashboard/teams/${team.id}`}>View Team</Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href={`/dashboard/teams/${team.id}`}>View Team</Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
 
       {filteredTeams.length === 0 && (

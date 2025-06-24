@@ -142,7 +142,74 @@ export default function DashboardLayout({
   }, [user, isLoading, router])
 
   // Pilih navItems sesuai role
-  const navItems = user?.role === "manager" ? adminNavItems : memberNavItems
+  let navItems: NavItem[] = [];
+  if (user?.role === "project_manager" || user?.role === "admin") {
+    navItems = [
+      {
+        title: "Dashboard",
+        href: "/dashboard",
+        icon: Home,
+      },
+      {
+        title: "Teams",
+        href: "/dashboard/teams",
+        icon: Users,
+      },
+      {
+        title: "Projects",
+        href: "/dashboard/projects",
+        icon: Calendar,
+      },
+      {
+        title: "Mood Dashboard",
+        href: "/dashboard/mood",
+        icon: Smile,
+      },
+      {
+        title: "Check-in/out",
+        href: "/dashboard/checkin",
+        icon: CheckCircle,
+      },
+      {
+        title: "Comfort Tips",
+        href: "/dashboard/tips",
+        icon: MessageSquare,
+      },
+      {
+        title: "Reports",
+        href: "/dashboard/reports",
+        icon: BarChart3,
+      },
+      {
+        title: "Settings",
+        href: "/dashboard/settings",
+        icon: Settings,
+      },
+    ];
+  } else if (user?.role === "member") {
+    navItems = [
+      {
+        title: "Dashboard",
+        href: "/dashboard",
+        icon: Home,
+      },
+      {
+        title: "Check-in/out",
+        href: "/dashboard/checkin",
+        icon: CheckCircle,
+      },
+      {
+        title: "Comfort Tips",
+        href: "/dashboard/tips",
+        icon: MessageSquare,
+      },
+      {
+        title: "Settings",
+        href: "/dashboard/settings",
+        icon: Settings,
+      },
+    ];
+  }
 
   return (
     <div className="flex min-h-screen bg-muted/20">
