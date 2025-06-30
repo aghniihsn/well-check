@@ -93,6 +93,13 @@ export const api = {
     create: (data: any) => fetcher<any>('/teams', { method: 'POST', data }),
     update: (id: string, data: any) => fetcher<any>(`/teams/${id}`, { method: 'PUT', data }),
     delete: (id: string) => fetcher<any>(`/teams/${id}`, { method: 'DELETE' }),
+  },
+
+  // Report endpoints
+  reports: {
+    generate: (data: any) => fetcher<any>('/reports/generate', { method: 'POST', data }),
+    getAll: () => fetcher<any[]>('/reports'),
+    download: (id: string) => fetcher<any>(`/reports/${id}/download`),
   }
 };
 
