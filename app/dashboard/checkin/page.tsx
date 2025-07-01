@@ -150,15 +150,7 @@ export default function CheckInPage() {
   }
 
   const handleSubmit = async (type: "checkin" | "checkout") => {
-    if (type === "checkout" && !selectedMood) {
-      toast({
-        title: "Mood selection required",
-        description: "Please select your current mood before submitting.",
-        variant: "destructive",
-      })
-      return
-    }
-
+    // Mood for both checkin and checkout is always taken from faceResult.expression
     if (!selfiePreview) {
       toast({
         title: "Selfie required",
@@ -170,11 +162,9 @@ export default function CheckInPage() {
 
     setIsSubmitting(true)
     try {
-      // Optionally upload selfie to backend and get URL, or just send base64
-      // If backend expects URL, use: const selfieUrl = await api.uploadImage(selfiePreview)
       const payload = {
         type,
-        mood: type === "checkin" ? (faceResult?.expression || "unknown") : (selectedMood || "unknown"),
+        mood: faceResult?.expression || "unknown",
         description,
         selfieImage: selfiePreview, // base64 string
         faceData: faceResult || undefined,
