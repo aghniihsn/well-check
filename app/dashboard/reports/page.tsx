@@ -66,7 +66,6 @@ useEffect(() => {
         <TabsList>
           <TabsTrigger value="generate">Generate Report</TabsTrigger>
           <TabsTrigger value="saved">Saved Reports</TabsTrigger>
-          <TabsTrigger value="scheduled">Scheduled Reports</TabsTrigger>
         </TabsList>
 
         <TabsContent value="generate" className="space-y-4">
@@ -86,8 +85,6 @@ useEffect(() => {
                     <SelectContent>
                       <SelectItem value="mood">Mood Analysis</SelectItem>
                       <SelectItem value="absence">Absence Report</SelectItem>
-                      <SelectItem value="performance">Team Performance</SelectItem>
-                      <SelectItem value="wellbeing">Wellbeing Summary</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -102,24 +99,10 @@ useEffect(() => {
                       <SelectItem value="weekly">Weekly</SelectItem>
                       <SelectItem value="monthly">Monthly</SelectItem>
                       <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="custom">Custom Range</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-
-              {reportPeriod === "custom" && (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date</Label>
-                    <Input id="start-date" type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="end-date">End Date</Label>
-                    <Input id="end-date" type="date" />
-                  </div>
-                </div>
-              )}
 
               <div className="space-y-2">
                 <Label htmlFor="team-select">Team</Label>
@@ -150,39 +133,8 @@ useEffect(() => {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="report-options">Additional Options</Label>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <div className="flex items-center space-x-2">
-                    <input type="checkbox" id="include-charts" className="h-4 w-4 rounded border-gray-300" />
-                    <label htmlFor="include-charts" className="text-sm">
-                      Include Charts and Graphs
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input type="checkbox" id="include-recommendations" className="h-4 w-4 rounded border-gray-300" />
-                    <label htmlFor="include-recommendations" className="text-sm">
-                      Include Recommendations
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input type="checkbox" id="compare-previous" className="h-4 w-4 rounded border-gray-300" />
-                    <label htmlFor="compare-previous" className="text-sm">
-                      Compare with Previous Period
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input type="checkbox" id="anonymize" className="h-4 w-4 rounded border-gray-300" />
-                    <label htmlFor="anonymize" className="text-sm">
-                      Anonymize Individual Data
-                    </label>
-                  </div>
-                </div>
-              </div>
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline">Save as Template</Button>
               <Button onClick={handleGenerateReport} disabled={isGenerating}>
                 {isGenerating ? (
                   "Generating..."
@@ -195,106 +147,9 @@ useEffect(() => {
               </Button>
             </CardFooter>
           </Card>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Report Templates</CardTitle>
-                <CardDescription>Quickly generate reports using saved templates</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: "Weekly Mood Summary", type: "mood", period: "weekly" },
-                    { name: "Monthly Absence Report", type: "absence", period: "monthly" },
-                    { name: "Quarterly Team Performance", type: "performance", period: "quarterly" },
-                  ].map((template, i) => (
-                    <div key={i} className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                        <div className="font-medium">{template.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {template.type.charAt(0).toUpperCase() + template.type.slice(1)} •{" "}
-                          {template.period.charAt(0).toUpperCase() + template.period.slice(1)}
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        Use Template
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Report Insights</CardTitle>
-                <CardDescription>Tips for effective reporting and analysis</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="rounded-lg border p-3">
-                    <h3 className="font-medium">Mood Trends Analysis</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Look for patterns in mood data across different days of the week to identify potential stress
-                      points.
-                    </p>
-                  </div>
-                  <div className="rounded-lg border p-3">
-                    <h3 className="font-medium">Absence Correlation</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Analyze the relationship between team mood and absence rates to identify potential wellbeing
-                      issues.
-                    </p>
-                  </div>
-                  <div className="rounded-lg border p-3">
-                    <h3 className="font-medium">Comparative Analysis</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Compare current data with previous periods to track improvements and identify areas needing
-                      attention.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
         <TabsContent value="saved" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search reports..." className="pl-8 w-[300px]" />
-            </div>
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filter
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>All Reports</DropdownMenuItem>
-                  <DropdownMenuItem>Mood Reports</DropdownMenuItem>
-                  <DropdownMenuItem>Absence Reports</DropdownMenuItem>
-                  <DropdownMenuItem>Performance Reports</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Select defaultValue="recent">
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Most Recent</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
           <div className="grid gap-4">
             {savedReports.length === 0 ? (
@@ -343,83 +198,6 @@ useEffect(() => {
               })
             )}
           </div>
-        </TabsContent>
-
-        <TabsContent value="scheduled" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Scheduled Reports</CardTitle>
-              <CardDescription>Manage your automated report generation schedule</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    name: "Weekly Mood Summary",
-                    frequency: "Weekly",
-                    day: "Monday",
-                    time: "9:00 AM",
-                    recipients: "Team Leads",
-                    status: "Active",
-                  },
-                  {
-                    name: "Monthly Absence Report",
-                    frequency: "Monthly",
-                    day: "1st",
-                    time: "8:00 AM",
-                    recipients: "Management Team",
-                    status: "Active",
-                  },
-                  {
-                    name: "Quarterly Performance Report",
-                    frequency: "Quarterly",
-                    day: "1st of quarter",
-                    time: "9:00 AM",
-                    recipients: "Executive Team",
-                    status: "Active",
-                  },
-                ].map((schedule, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-1">
-                      <h3 className="font-medium">{schedule.name}</h3>
-                      <div className="text-sm text-muted-foreground">
-                        {schedule.frequency} • {schedule.day} • {schedule.time}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Recipients: {schedule.recipients}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`rounded-full px-2 py-1 text-xs font-medium ${
-                          schedule.status === "Active" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {schedule.status}
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Edit Schedule</DropdownMenuItem>
-                          <DropdownMenuItem>Pause Schedule</DropdownMenuItem>
-                          <DropdownMenuItem>Run Now</DropdownMenuItem>
-                          <DropdownMenuItem>Delete Schedule</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule New Report
-              </Button>
-            </CardFooter>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
