@@ -150,6 +150,40 @@ useEffect(() => {
         </TabsContent>
 
         <TabsContent value="saved" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input type="search" placeholder="Search reports..." className="pl-8 w-[300px]" />
+            </div>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filter
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>All Reports</DropdownMenuItem>
+                  <DropdownMenuItem>Mood Reports</DropdownMenuItem>
+                  <DropdownMenuItem>Absence Reports</DropdownMenuItem>
+                  <DropdownMenuItem>Performance Reports</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Select defaultValue="recent">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most Recent</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <div className="grid gap-4">
             {savedReports.length === 0 ? (
@@ -198,6 +232,83 @@ useEffect(() => {
               })
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="scheduled" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Scheduled Reports</CardTitle>
+              <CardDescription>Manage your automated report generation schedule</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  {
+                    name: "Weekly Mood Summary",
+                    frequency: "Weekly",
+                    day: "Monday",
+                    time: "9:00 AM",
+                    recipients: "Team Leads",
+                    status: "Active",
+                  },
+                  {
+                    name: "Monthly Absence Report",
+                    frequency: "Monthly",
+                    day: "1st",
+                    time: "8:00 AM",
+                    recipients: "Management Team",
+                    status: "Active",
+                  },
+                  {
+                    name: "Quarterly Performance Report",
+                    frequency: "Quarterly",
+                    day: "1st of quarter",
+                    time: "9:00 AM",
+                    recipients: "Executive Team",
+                    status: "Active",
+                  },
+                ].map((schedule, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-1">
+                      <h3 className="font-medium">{schedule.name}</h3>
+                      <div className="text-sm text-muted-foreground">
+                        {schedule.frequency} • {schedule.day} • {schedule.time}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Recipients: {schedule.recipients}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`rounded-full px-2 py-1 text-xs font-medium ${
+                          schedule.status === "Active" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {schedule.status}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>Edit Schedule</DropdownMenuItem>
+                          <DropdownMenuItem>Pause Schedule</DropdownMenuItem>
+                          <DropdownMenuItem>Run Now</DropdownMenuItem>
+                          <DropdownMenuItem>Delete Schedule</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button>
+                <Calendar className="mr-2 h-4 w-4" />
+                Schedule New Report
+              </Button>
+            </CardFooter>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

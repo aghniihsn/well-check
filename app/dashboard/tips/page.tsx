@@ -21,62 +21,80 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 
-// Comfort tips yang lebih personal dan sederhana
+// Sample tips data
 const tips = [
   {
     id: 1,
-    title: "Tarik Napas Dalam-dalam",
-    description: "Ambil waktu sejenak untuk menenangkan diri dan tarik napas perlahan.",
-    category: "wellness",
-    likes: 12,
+    title: "Regular Team Check-ins",
+    description: "Schedule brief daily check-ins to maintain team connection and address any concerns early.",
+    category: "team",
+    likes: 24,
     isLiked: false,
   },
   {
     id: 2,
-    title: "Lakukan Peregangan Ringan",
-    description: "Bangun dari tempat duduk dan lakukan peregangan atau berjalan sebentar.",
+    title: "Mindfulness Breaks",
+    description:
+      "Encourage team members to take short mindfulness breaks throughout the day to reduce stress and improve focus.",
     category: "wellness",
-    likes: 15,
-    isLiked: false,
+    likes: 42,
+    isLiked: true,
   },
   {
     id: 3,
-    title: "Minum Air Putih",
-    description: "Pastikan tubuh tetap terhidrasi agar tetap fokus.",
-    category: "wellness",
-    likes: 10,
+    title: "Workload Distribution",
+    description: "Regularly review and adjust workloads to ensure no team member is overwhelmed with tasks.",
+    category: "productivity",
+    likes: 18,
     isLiked: false,
   },
   {
     id: 4,
-    title: "Dengarkan Musik Favorit",
-    description: "Coba dengarkan lagu yang kamu suka untuk meningkatkan mood.",
-    category: "wellness",
-    likes: 8,
+    title: "Recognition Program",
+    description: "Implement a peer recognition program to boost morale and acknowledge team members' contributions.",
+    category: "team",
+    likes: 31,
     isLiked: false,
   },
   {
     id: 5,
-    title: "Ceritakan Perasaanmu",
-    description: "Jika perlu, bicarakan perasaanmu ke teman atau rekan kerja.",
-    category: "team",
-    likes: 7,
+    title: "Ergonomic Workspace",
+    description:
+      "Provide guidance on setting up ergonomic workspaces to prevent physical strain during long work hours.",
+    category: "wellness",
+    likes: 27,
     isLiked: false,
   },
   {
     id: 6,
-    title: "Fokus pada Satu Tugas Kecil",
-    description: "Kerjakan satu tugas kecil terlebih dahulu, lalu lanjutkan perlahan.",
+    title: "Focus Time Blocks",
+    description: "Designate specific hours for focused work with minimal interruptions to improve productivity.",
     category: "productivity",
-    likes: 9,
-    isLiked: false,
+    likes: 35,
+    isLiked: true,
   },
   {
     id: 7,
-    title: "Jangan Lupa Tersenyum",
-    description: "Hari yang baik akan datang, tetap semangat!",
+    title: "Team Building Activities",
+    description: "Schedule regular virtual or in-person team building activities to strengthen relationships.",
+    category: "team",
+    likes: 29,
+    isLiked: false,
+  },
+  {
+    id: 8,
+    title: "Healthy Snack Options",
+    description: "Provide healthy snack options in the office or encourage healthy eating habits for remote workers.",
     category: "wellness",
-    likes: 11,
+    likes: 22,
+    isLiked: false,
+  },
+  {
+    id: 9,
+    title: "Project Management Tools",
+    description: "Utilize effective project management tools to keep everyone aligned and track progress efficiently.",
+    category: "productivity",
+    likes: 33,
     isLiked: false,
   },
 ]
@@ -150,9 +168,55 @@ export default function TipsPage() {
           <h2 className="text-2xl font-bold tracking-tight">Team Comfort Tips</h2>
           <p className="text-muted-foreground">Recommendations to improve team wellbeing and productivity</p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline">
+            <Coffee className="mr-2 h-4 w-4" />
+            Generate Custom Tips
+          </Button>
+          <Button>
+            <BookOpen className="mr-2 h-4 w-4" />
+            Wellness Resources
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <TabsList>
+            <TabsTrigger value="all">All Tips</TabsTrigger>
+            <TabsTrigger value="team">Team</TabsTrigger>
+            <TabsTrigger value="wellness">Wellness</TabsTrigger>
+            <TabsTrigger value="productivity">Productivity</TabsTrigger>
+            <TabsTrigger value="liked">Favorites</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search tips..."
+                className="pl-8 w-[200px] md:w-[300px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filter
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setActiveTab("all")}>All Categories</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("team")}>Team Building</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("wellness")}>Wellness</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("productivity")}>Productivity</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
         <TabsContent value="all" className="space-y-4">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
